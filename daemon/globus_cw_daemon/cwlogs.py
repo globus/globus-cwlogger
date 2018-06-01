@@ -9,6 +9,11 @@ import logging
 
 import boto
 
+try:
+    unicode_type = unicode
+except NameError:
+    unicode_type = str
+
 
 MAX_EVENT_BYTES = (256 * 1024)
 
@@ -24,17 +29,21 @@ class InvalidMessage(Exception): pass
 
 
 class Event(object):
+
+    def __repr__(self):
+        return 'Event({}, {})'.format(self.timestamp, self.unicode_message)
+
     def __init__(self, timestamp, message, enforce_limit=True):
         """
         Raise: InvalidMessage if message is too long
         Raise: UnicodeDecodeError if message is not valid utf8
         """
-        if isinstance(message, str):
+        if isinstance(message, bytes):
             message = message.decode("utf-8")
         if timestamp is None:
             timestamp = int(time.time() * 1000)
         assert isinstance(timestamp, int)
-        assert isinstance(message, unicode)
+        assert isinstance(message, unicode_type)
         assert timestamp >= 0
         encoded_message = message.encode("utf-8")
         self.timestamp = timestamp
@@ -145,9 +154,9 @@ class LogWriter(object):
         assert len(events)
         while True:
             try:
-                ret = self.conn.put_log_events(self.group_name, 
-                        self.stream_name, 
-                        events, 
+                ret = self.conn.put_log_events(self.group_name,
+                        self.stream_name,
+                        events,
                         sequence_token=self.sequence_token)
                 _log.info("flush ok")
                 self.sequence_token = ret["nextSequenceToken"]

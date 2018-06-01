@@ -5,7 +5,7 @@ Upload messages to cloud watch logs
 import os, sys, socket, logging, time, errno, threading, json
 
 import globus_cw_daemon.cwlogs as cwlogs
-import globus_cw_daemon.config as config
+from globus_cw_daemon.config import Config
 
 
 # Note that the total memory limit is double this:
@@ -39,15 +39,15 @@ def _print(m):
     sys.stdout.flush()
 
 
-def flush_thread_main(writer):
+def flush_thread_main(writer, config):
     try:
-        _flush_thread_main(writer)
+        _flush_thread_main(writer, config)
     except Exception as e:
         _log.exception(e)
         sys.exit(1)
 
 
-def _flush_thread_main(writer):
+def _flush_thread_main(writer, config):
     global _g_queue
     global _g_nr_dropped
     _log.info("flush_thread_main started")
@@ -106,16 +106,17 @@ def do_request(sock):
     Post: response is sent but @sock is left open
     """
     # Read <json_data>\n
-    buf = ""
+    buf = b''
     while True:
         chunk = sock.recv(4000)
         if not chunk:
             raise Exception("no data")
         buf += chunk
-        if buf.endswith("\n"):
+        if buf.endswith(b'\n'):
             break
 
-    d = json.loads(buf[:-1])
+    d = json.loads(buf.decode('utf-8')[:-1])
+
     _log.debug("request: %r", d)
 
     try:
@@ -169,15 +170,15 @@ def run_request_loop(listen_sock):
             _log.exception("unhandled in socket_thread_main!")
 
 
-def main():
-
+def main(config=None):
+    if config is None:
+        config = Config()
     # send local logs to stderr
     local_log_level = config.get_string("local_log_level").upper()
     logging.basicConfig(
         level=local_log_level, stream=sys.stderr, datefmt='%Y-%m-%d %H:%M:%S',
         fmt=("%(asctime)s.%(msecs)03d %(levelname)s %(process)d:%(thread)d "
              "%(name)s: %(message)s"))
-
     _print("cwlogs: starting...")
     _log.info("starting")
 
@@ -213,7 +214,7 @@ def main():
 
     writer = cwlogs.LogWriter(group_name, stream_name)
 
-    flush_thread = threading.Thread(target=flush_thread_main, args=(writer,))
+    flush_thread = threading.Thread(target=flush_thread_main, args=(writer, config))
     flush_thread.daemon = True
     flush_thread.start()
 
