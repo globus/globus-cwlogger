@@ -51,12 +51,12 @@ def _connect(retries, wait):
         try:
             sock.connect(addr)
         except Exception as err:
-            pass
+            error = err
         else:
             return sock
         time.sleep(wait)  # seconds
 
-    raise CWLoggerConnectionError("couldn't connect to cw", err)
+    raise CWLoggerConnectionError("couldn't connect to cw", error)
 
 
 def _request(req, retries, wait):
