@@ -1,3 +1,16 @@
+# coverage
+# --------
+
+[tool.coverage.run]
+relative_files = true
+parallel = true
+branch = true
+
+[tool.coverage.report]
+skip_covered = true
+fail_under = 84
+
+
 # isort
 # -----
 
