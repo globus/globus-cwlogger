@@ -55,4 +55,4 @@ jobs:
           .venv/bin/python -m pip install tox
 
       - name: "Run tests"
-        run: ".venv/bin/tox run"
+        run: ".venv/bin/tox run --colored yes"
