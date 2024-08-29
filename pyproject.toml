@@ -1,3 +1,24 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+# poetry
+# ------
+
+[tool.poetry]
+name = "globus-cw-client"
+version = "1.2"
+description = "Client for Globus CloudWatch Logger"
+authors = ["Stephen Rosen <sirosen@globus.org>"]
+license = "Apache"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+orjson = "^3.10.7"
+
+
 # coverage
 # --------
 
@@ -5,6 +26,16 @@
 relative_files = true
 parallel = true
 branch = true
+source = [
+    "globus_cw_client",
+    "tests",
+]
+
+[tool.coverage.paths]
+source = [
+    "src",
+    "*/site-packages",
+]
 
 [tool.coverage.report]
 skip_covered = true
@@ -40,7 +71,7 @@ filterwarnings = [
 # -----
 
 [tool.scriv]
-version = "command: grep -e 'version=' client/setup.py | grep -oPe '[\\d.]+'"
+version = "literal: pyproject.toml: tool.poetry.version"
 categories = [
     "Python support",
     "Added",
