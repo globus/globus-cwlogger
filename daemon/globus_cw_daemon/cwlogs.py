@@ -33,7 +33,7 @@ def _add_emf_header(request, **kwargs):
 
 
 class Event:
-    def __init__(self, timestamp, message, enforce_limit=True):
+    def __init__(self, timestamp, message, enforce_limit=True) -> None:
         """
         Raise: InvalidMessage if message is too long
         Raise: UnicodeDecodeError if message is not valid utf8
@@ -55,7 +55,7 @@ class Event:
 
 
 class _Batch:
-    def __init__(self):
+    def __init__(self) -> None:
         self.nr_bytes = 0
         self.records = []
 
@@ -97,7 +97,7 @@ class _Batch:
 
 
 class LogWriter:
-    def __init__(self, group_name, stream_name, aws_region=None):
+    def __init__(self, group_name, stream_name, aws_region=None) -> None:
         """
         Create the @stream_name if it doesn't exist.
         Raise: exception if boto can't connect.

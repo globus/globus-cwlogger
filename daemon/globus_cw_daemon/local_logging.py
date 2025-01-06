@@ -24,7 +24,7 @@ class PrintKFormatter(logging.Formatter):
     inspiration from the printk() kernel logging facilities.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         kwargs["fmt"] = (
             "%(asctime)s.%(msecs)03d %(levelname)s %(process)d:%(thread)d "
             "%(name)s: %(message)s"
