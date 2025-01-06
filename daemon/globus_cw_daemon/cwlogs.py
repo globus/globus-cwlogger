@@ -57,7 +57,7 @@ class Event:
 class _Batch:
     def __init__(self) -> None:
         self.nr_bytes = 0
-        self.records = []
+        self.records: list[Event] = []
 
     def add(self, record):
         """
