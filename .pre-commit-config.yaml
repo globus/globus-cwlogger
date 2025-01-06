@@ -20,24 +20,24 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/sirosen/texthooks
-    rev: 0.6.7
+    rev: 0.6.8
     hooks:
       - id: alphabetize-codeowners
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.29.3
+    rev: 0.30.0
     hooks:
       - id: check-github-workflows
       - id: check-dependabot
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.17.0
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args: ["--py38-plus"]
 
   - repo: https://github.com/sirosen/slyp
-    rev: 0.7.1
+    rev: 0.8.1
     hooks:
       - id: slyp
 
