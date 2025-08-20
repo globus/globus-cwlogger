@@ -42,6 +42,7 @@ def log_event(message, retries=10, wait=0.1):
     req["timestamp"] = int(time.time() * 1000)
     return _request(req, retries, wait)
 
+
 async def log_event_async(message, retries=10, wait=0.1):
     if isinstance(message, bytes):
         message = message.decode("utf-8")
@@ -59,7 +60,6 @@ async def log_event_async(message, retries=10, wait=0.1):
     req["message"] = message
     req["timestamp"] = int(time.time() * 1000)
     return await _request_async(req, retries, wait)
-    
 
 
 def _connect(retries, wait):
@@ -87,15 +87,15 @@ async def _connect_async(retries, wait):
     addr = "\0org.globus.cwlogs"
     for _ in range(retries + 1):
         try:
-            reader, writer = asyncio.open_unix_connection(path=addr)
+            reader, writer = await asyncio.open_unix_connection(path=addr)
         except Exception as err:
             if writer:
                 writer.close()
             error = err
         else:
             return reader, writer
-        time.sleep(wait):
-
+        await asyncio.sleep(wait)
+    raise CWLoggerConnectionError("couldn't connect to cw", error)
 
 
 def _request(req, retries, wait):
@@ -117,6 +117,7 @@ def _request(req, retries, wait):
             break
 
     d = json.loads(resp[:-1])
+    sock.close()
     if isinstance(d, dict):
         status = d["status"]
         if status == "ok":
@@ -141,6 +142,7 @@ async def _request_async(req, retries, wait):
     if not resp.endswith(b"\n"):
         raise Exception("no data")
     resp = resp.decode("utf-8")
+    writer.close()
 
     d = json.loads(resp[:-1])
     if isinstance(d, dict):
