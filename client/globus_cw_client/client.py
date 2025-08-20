@@ -2,6 +2,7 @@
 Python client API for cwlogs daemon
 """
 
+import asyncio
 import json
 import socket
 import time
@@ -42,6 +43,25 @@ def log_event(message, retries=10, wait=0.1):
     return _request(req, retries, wait)
 
 
+async def log_event_async(message, retries=10, wait=0.1):
+    if isinstance(message, bytes):
+        message = message.decode("utf-8")
+    _checktype(message, str, "message type must be bytes or unicode")
+
+    _checktype(retries, int, "retries must be an int")
+    if retries < 0:
+        raise ValueError("retries must be non-negative")
+
+    _checktype(wait, (int, float), "wait must be an int or float")
+    if wait < 0:
+        raise ValueError("wait must be non-negative")
+
+    req = {}
+    req["message"] = message
+    req["timestamp"] = int(time.time() * 1000)
+    return await _request_async(req, retries, wait)
+
+
 def _connect(retries, wait):
     """
     Try to connect to the daemon @retries + 1 times,
@@ -63,11 +83,24 @@ def _connect(retries, wait):
     raise CWLoggerConnectionError("couldn't connect to cw", error)
 
 
+async def _connect_async(retries, wait):
+    addr = "\0org.globus.cwlogs"
+    for _ in range(retries + 1):
+        try:
+            reader, writer = await asyncio.open_unix_connection(path=addr)
+        except Exception as err:
+            if writer:
+                writer.close()
+            error = err
+        else:
+            return reader, writer
+        await asyncio.sleep(wait)
+    raise CWLoggerConnectionError("couldn't connect to cw", error)
+
+
 def _request(req, retries, wait):
     buf = json.dumps(req, indent=None) + "\n"
-    # dumps returns unicode with python3, but sock requires bytes
-    if isinstance(buf, str):
-        buf = buf.encode("utf-8")
+    buf = buf.encode("utf-8")
 
     sock = _connect(retries, wait)
     sock.sendall(buf)
@@ -76,10 +109,37 @@ def _request(req, retries, wait):
     while True:
         chunk = sock.recv(4000)
         if not chunk:
+            sock.close()
             raise Exception("no data")
         resp += chunk.decode("utf-8")
         if resp.endswith("\n"):
             break
+
+    d = json.loads(resp[:-1])
+    sock.close()
+    if isinstance(d, dict):
+        status = d["status"]
+        if status == "ok":
+            return d
+        else:
+            raise CWLoggerDaemonError("forwarded error", d["message"])
+    else:
+        raise CWLoggerDaemonError("unknown response type", d)
+
+
+async def _request_async(req, retries, wait):
+    buf = json.dumps(req, indent=None) + "\n"
+    buf = buf.encode("utf-8")
+
+    reader, writer = await _connect_async(retries, wait)
+    writer.write(buf)
+    await writer.drain()
+
+    resp = await reader.readline()
+    writer.close()
+    if not resp.endswith(b"\n"):
+        raise Exception("no data")
+    resp = resp.decode("utf-8")
 
     d = json.loads(resp[:-1])
     if isinstance(d, dict):
