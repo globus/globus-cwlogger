@@ -16,7 +16,7 @@ def _checktype(value, types, message):
 def log_event(message, retries=10, wait=0.1):
     """
     Log the @message string to cloudwatch logs, using the current time.
-    message: bytes (valid utf8 required) or unicode.
+    message: bytes (valid utf8 required) or str.
     retries: number of retries to make on failed socket connection
     wait: number of seconds to wait between retries
     Raises: exception if the message is too long or invalid utf8
@@ -27,7 +27,7 @@ def log_event(message, retries=10, wait=0.1):
     # python3 json library can't handle bytes, so preemptively decode utf-8
     if isinstance(message, bytes):
         message = message.decode("utf-8")
-    _checktype(message, str, "message type must be bytes or unicode")
+    _checktype(message, str, "message type must be bytes or str")
 
     _checktype(retries, int, "retries must be an int")
     if retries < 0:
@@ -37,9 +37,7 @@ def log_event(message, retries=10, wait=0.1):
     if wait < 0:
         raise ValueError("wait must be non-negative")
 
-    req = {}
-    req["message"] = message
-    req["timestamp"] = int(time.time() * 1000)
+    req = {"message": message, "timestamp": int(time.time() * 1000)}
     return _request(req, retries, wait)
 
 
@@ -62,17 +60,19 @@ async def log_event_async(message, retries=10, wait=0.1):
     return await _request_async(req, retries, wait)
 
 
+socket_path = "/tmp/org.globus.cwlogs"
+
+
 def _connect(retries, wait):
     """
     Try to connect to the daemon @retries + 1 times,
     waiting @wait seconds between tries
     Raise: Exception if max attempts exceeded
     """
-    addr = "\0org.globus.cwlogs"
     for _ in range(retries + 1):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM, 0)
         try:
-            sock.connect(addr)
+            sock.connect(socket_path)
         except Exception as err:
             sock.close()
             error = err
@@ -84,10 +84,10 @@ def _connect(retries, wait):
 
 
 async def _connect_async(retries, wait):
-    addr = "\0org.globus.cwlogs"
     for _ in range(retries + 1):
+        writer = None
         try:
-            reader, writer = await asyncio.open_unix_connection(path=addr)
+            reader, writer = await asyncio.open_unix_connection(path=socket_path)
         except Exception as err:
             if writer:
                 writer.close()
