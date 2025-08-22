@@ -208,8 +208,16 @@ def main():
     _print("cwlogs: starting...")
     _log.info("starting")
 
+    addr = "/tmp/org.globus.cwlogs"
+
+    # clean up previous socket if exists
+    try:
+        os.remove(addr)
+    except FileNotFoundError:
+        pass
+
+    os.umask(0)
     listen_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM, 0)
-    addr = "\0org.globus.cwlogs"
     try:
         listen_sock.bind(addr)
     except OSError as e:
