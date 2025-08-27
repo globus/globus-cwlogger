@@ -100,9 +100,7 @@ async def _connect_async(retries, wait):
 
 def _request(req, retries, wait):
     buf = json.dumps(req, indent=None) + "\n"
-    # dumps returns unicode with python3, but sock requires bytes
-    if isinstance(buf, str):
-        buf = buf.encode("utf-8")
+    buf = buf.encode("utf-8")
 
     sock = _connect(retries, wait)
     sock.sendall(buf)
@@ -111,6 +109,7 @@ def _request(req, retries, wait):
     while True:
         chunk = sock.recv(4000)
         if not chunk:
+            sock.close()
             raise Exception("no data")
         resp += chunk.decode("utf-8")
         if resp.endswith("\n"):
@@ -130,19 +129,17 @@ def _request(req, retries, wait):
 
 async def _request_async(req, retries, wait):
     buf = json.dumps(req, indent=None) + "\n"
-    # dumps returns unicode with python3, but sock requires bytes
-    if isinstance(buf, str):
-        buf = buf.encode("utf-8")
+    buf = buf.encode("utf-8")
 
     reader, writer = await _connect_async(retries, wait)
     writer.write(buf)
     await writer.drain()
 
     resp = await reader.readline()
+    writer.close()
     if not resp.endswith(b"\n"):
         raise Exception("no data")
     resp = resp.decode("utf-8")
-    writer.close()
 
     d = json.loads(resp[:-1])
     if isinstance(d, dict):
