@@ -7,7 +7,4 @@ setup(
     # descriptive info, non-critical
     description="Client for Globus CloudWatch Logger",
     url="https://github.com/globus/globus-cwlogger",
-    install_requires=[
-        "orjson",
-    ],
 )
