@@ -2,6 +2,7 @@
 """
 Upload messages to cloud watch logs
 """
+
 from __future__ import annotations
 
 import errno
